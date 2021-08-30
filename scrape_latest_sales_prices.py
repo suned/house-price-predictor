@@ -34,10 +34,6 @@ address_pattern = (r'(?P<street>[a-zA-ZæøåÆØÅ ]+) '
                    r'(?P<city>[a-zA-ZæøåÆØÅ ]+)')
 
 
-logformat = '%(filename)s:%(lineno)-3s :: %(levelname)-8s :: %(message)s'
-logging.basicConfig(format=logformat)
-
-
 def scrape_prices(soup: bs4.BeautifulSoup) -> List[Row]:
     if not soup.find_all('app-sold-list-table'):
         raise NoSoldListError()
@@ -166,6 +162,8 @@ def main(streets_txt: str, zip_code: str) -> None:
 
 
 if __name__ == '__main__':
+    logformat = '%(filename)s:%(lineno)-3s :: %(levelname)-8s :: %(message)s'
+    logging.basicConfig(format=logformat)
     logging.getLogger().setLevel(logging.INFO)
     
     parser = argparse.ArgumentParser()
