@@ -19,7 +19,7 @@ def count_sales_year(df: pandas.DataFrame) -> pandas.Series:
 def filter_sales_year(
     df: pandas.DataFrame,
     min_sales_year: int = 0,
-    max_sales_year: int = datetime.today().year
+    max_sales_year: int = datetime.today().year + 1
 ) -> pandas.DataFrame:
     """Filter sales by sales year."""
     idx = (df.date > str(min_sales_year)) & (df.date < str(max_sales_year))
@@ -29,7 +29,7 @@ def filter_sales_year(
 def filter_build_year(
     df: pandas.DataFrame,
     min_build_year: int = 0,
-    max_build_year: int = datetime.today().year
+    max_build_year: int = datetime.today().year + 1
 ) -> pandas.DataFrame:
     """Filter sales by build year."""
     return df[(df.built > min_build_year) & (df.built < max_build_year)]
