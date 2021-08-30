@@ -7,5 +7,5 @@
 
 ## Usage
 ```shell
-> python -m scrape_latest_sales_prices streets_bittekrogen.txt 2950
+> python -m scrape_latest_sales_prices bittekrogen.txt 2950
 ```
