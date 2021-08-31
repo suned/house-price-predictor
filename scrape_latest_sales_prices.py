@@ -16,7 +16,7 @@ class Row(TypedDict):
     """A row of sales price data."""
 
     address: str
-    zip: str
+    zip_code: str
     price: float
     date: str
     rooms: str
@@ -57,7 +57,7 @@ def scrape_prices(soup: bs4.BeautifulSoup) -> List[Row]:
 
         rows.append(Row({
             'address' : street,
-            'zip'     : zip_code,
+            'zip_code': zip_code,
             'price'   : float(price),
             'date'    : date,
             'rooms'   : rooms,
