@@ -6,10 +6,12 @@ import urllib.parse
 import re
 import logging
 from pathlib import Path
+from enum import Enum
 
 import requests
 import bs4  # type: ignore
 import pandas  # type: ignore
+from main_dec import main
 
 
 class Row(TypedDict):
@@ -29,6 +31,11 @@ class NoSoldListError(Exception):
     """Error used when the boliga response contains no sold list."""
 
     pass
+
+
+class PropertyType(Enum):
+    house = 1
+    terrace_house = 2
 
 
 address_pattern = (r'(?P<street>[a-zA-ZæøåÆØÅ ]+) '
@@ -140,12 +147,13 @@ def scrape_zip_code(columns: bs4.element.ResultSet) -> str:
     return zip_code
 
 
-def make_request(street: str, zip_code: str) -> bs4.BeautifulSoup:
+def make_request(street: str, zip_code: str, property_type: PropertyType) -> bs4.BeautifulSoup:
     """Make request to boliga.dk."""
     url = (f'https://www.boliga.dk/salg/'
-           f'resultater?searchTab=1&propertyType=1&zipcodeFrom={zip_code}&'
+           f'resultater?searchTab=1&propertyType={property_type.value}&zipcodeFrom={zip_code}&'
            f'zipcodeTo={zip_code}&street={urllib.parse.quote_plus(street)}&'
            f'sort=date-d&page=1')
+    logging.info(f'Request url: {url}')
     response = requests.get(url)
     return bs4.BeautifulSoup(response.text, features="html.parser")
 
@@ -156,14 +164,26 @@ def format_filename(streets_txt: str) -> str:
     return f'{name}.csv'
 
 
-def main(streets_txt: str, zip_code: str) -> None:
-    """Entry-point for script."""
+@main
+def _(streets_txt: str, zip_code: str, property_type: PropertyType = PropertyType.house) -> None:
+    """
+    Scrape sales prices from boliga.dk
+
+    Args:
+        streets_txt: path to .txt file with street names
+        zip_code: zip code to search within
+        property_type: type of properties to search for
+    """
+    logformat = '%(filename)s:%(lineno)-3s :: %(levelname)-8s :: %(message)s'
+    logging.basicConfig(format=logformat)
+    logging.getLogger().setLevel(logging.INFO)
+
     rows = []
     with open(streets_txt) as f:
         streets = f.read().splitlines()
     for street in streets:
         logging.info(f'Scraping {street}')
-        soup = make_request(street, zip_code)
+        soup = make_request(street, zip_code, property_type)
         try:
             new_rows = scrape_prices(soup)
             logging.info(f'Got {len(new_rows)} new rows')
@@ -174,17 +194,3 @@ def main(streets_txt: str, zip_code: str) -> None:
     filename = format_filename(streets_txt)
     logging.info(f'Saving {filename} with a total of {len(rows)} rows')
     pandas.DataFrame(rows).to_csv(filename, index=False)
-
-
-if __name__ == '__main__':
-    logformat = '%(filename)s:%(lineno)-3s :: %(levelname)-8s :: %(message)s'
-    logging.basicConfig(format=logformat)
-    logging.getLogger().setLevel(logging.INFO)
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument('streets_txt')
-    parser.add_argument('zip')
-
-    args = parser.parse_args()
-
-    main(args.streets_txt, args.zip)
