@@ -1,12 +1,13 @@
 """Script for scraping sales prices from boliga.dk."""
 
-from typing import List, TypedDict
+from typing import List, TypedDict, Match
 import argparse
 import urllib.parse
 import re
 import logging
 from pathlib import Path
 from enum import Enum
+import math
 
 import requests
 import bs4  # type: ignore
@@ -36,12 +37,10 @@ class NoSoldListError(Exception):
 class PropertyType(Enum):
     house = 1
     terrace_house = 2
+    villa_apartment = 9
 
 
-address_pattern = (r'(?P<street>[a-zA-ZæøåÆØÅ ]+) '
-                   r'(?P<number>\d+[A-Z]?) '
-                   r'(?P<zip>\d+) '
-                   r'(?P<city>[a-zA-ZæøåÆØÅ ]+)')
+address_pattern = (r'(?P<street>[\D ]+)(?P<number>\d+[A-Z]?),?( (?P<floor>(kl\.?|st\.?|(\d+).?)( th| tv| mf| \d+)?))? (?P<zip>\d{4}) (?P<city>[\D ]+)')
 
 
 def scrape_prices(soup: bs4.BeautifulSoup) -> List[Row]:
@@ -61,6 +60,11 @@ def scrape_prices(soup: bs4.BeautifulSoup) -> List[Row]:
         rooms    = scrape_rooms(columns)
         area     = scrape_area(columns)
         year     = scrape_year(columns)
+        try:
+            m2_price = float(price) / int(area)
+        except ZeroDivisionError:
+            logging.warning(f'0 area for address {street}')
+            m2_price = math.nan
 
         rows.append(Row({
             'address' : street,
@@ -70,7 +74,7 @@ def scrape_prices(soup: bs4.BeautifulSoup) -> List[Row]:
             'rooms'   : rooms,
             'm2'      : area,
             'built'   : year,
-            'm2_price': float(price) / int(area)
+            'm2_price': m2_price
         }))
     return rows
 
@@ -124,7 +128,7 @@ def scrape_price(columns: bs4.element.ResultSet) -> str:
     return price
 
 
-def match_address(columns: bs4.element.ResultSet) -> re.Match:
+def match_address(columns: bs4.element.ResultSet) -> Match:
     """Scrape the address from a sold table row and apply address regex."""
     address = columns[0].find(attrs={'data-gtm': 'sales_address'}).text.strip()
     m = re.match(address_pattern, address)
@@ -137,6 +141,8 @@ def scrape_street(columns: bs4.element.ResultSet) -> str:
     """Scrape the street name and no. from a row in the boliga sold table."""
     m = match_address(columns)
     street = f'{m.group("street")} {m.group("number")}'
+    if m.group('floor') is not None:
+        street += f' {m.group("floor")}'
     return street
 
 
