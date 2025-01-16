@@ -38,6 +38,7 @@ class PropertyType(Enum):
     house = 1
     terrace_house = 2
     villa_apartment = 9
+    summerhouse = 4
 
 
 address_pattern = (r'(?P<street>[\D ]+)(?P<number>\d+[A-Z]?),?( (?P<floor>(kl\.?|st\.?|(\d+).?)( th| tv| mf| \d+)?))? (?P<zip>\d{4}) (?P<city>[\D ]+)')
@@ -180,23 +181,16 @@ def _(streets_txt: str, zip_code: str, property_type: PropertyType = PropertyTyp
         zip_code: zip code to search within
         property_type: type of properties to search for
     """
-    logformat = '%(filename)s:%(lineno)-3s :: %(levelname)-8s :: %(message)s'
-    logging.basicConfig(format=logformat)
-    logging.getLogger().setLevel(logging.INFO)
 
     rows = []
     with open(streets_txt) as f:
         streets = f.read().splitlines()
     for street in streets:
-        logging.info(f'Scraping {street}')
         soup = make_request(street, zip_code, property_type)
         try:
             new_rows = scrape_prices(soup)
-            logging.info(f'Got {len(new_rows)} new rows')
             rows.extend(new_rows)
         except NoSoldListError:
-            logging.error(f'No sold list found for {street}')
             continue
     filename = format_filename(streets_txt)
-    logging.info(f'Saving {filename} with a total of {len(rows)} rows')
-    pandas.DataFrame(rows).to_csv(filename, index=False)
+    pandas.DataFrame(rows).to_csv('data/'+filename, index=False)
