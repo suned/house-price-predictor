@@ -1,4 +1,4 @@
-# House Price Determinator 🏡 🤑
+# House Price Predictor 🏡 🤑
 
 ## Requirements
 Ensure you have Python installed, then install the required dependencies using the following command:
