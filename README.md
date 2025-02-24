@@ -38,7 +38,7 @@ For example:
 This will generate a `*.csv`-file with the results of the scraping. You can now use that csv-file to calculate a suggested price based on the house's area: 
 
 ```shell
-> python -m predict_sales_price [FILENAME].csv [HOUSE_SQUARE_METERS]
+> python -m predict_sales_price [FILENAME].csv [PROPERTY_SQUARE_METERS]
 ```
 
 For example:
